@@ -4,9 +4,11 @@
 ver=$1
 kver=$2
 
-wget https://github.com/openvswitch/ovs/archive/v${ver}.tar.gz
+if [ ! -f v${ver}.tar.gz ];then
+    wget https://github.com/openvswitch/ovs/archive/v${ver}.tar.gz
+fi
 
-yum install automake  libtool openssl-devel rpm-build kernel-devel selinux-policy-devel python-devel desktop-file-utils groff  graphviz python-twisted-core python-zope-interface libcap-ng-devel
+yum install automake  libtool openssl openssl-devel rpm-build kernel-devel-$kver kernel-headers-$kver selinux-policy-devel python-devel desktop-file-utils groff  graphviz python-twisted-core python-zope-interface libcap-ng-devel python-six python-sphinx
 
 tar xvf v${ver}.tar.gz
 
@@ -20,6 +22,13 @@ cd openvswitch-$ver
 ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib64 --enable-ssl --enable-shared
 make dist
 
+mod_dir=/lib/modules/$kver
+if [ ! -d $mod_dir ];then
+    mkdir -p $mod_dir
+    cd $mod_dir
+    ln -s /usr/src/kernels/$kver build
+    cd -
+fi
 
-rpmbuild -bb --without check rhel/openvswitch-fedora..spec
-rpmbuild -bb -D "kversion $kversion" rhel/openvswitch-kmod-fedora.spec
+rpmbuild -bb --without check rhel/openvswitch-fedora.spec
+rpmbuild -bb -D "kversion $kver" rhel/openvswitch-kmod-fedora.spec
